@@ -5,25 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Caixa Seguro IA</title>
+  <title>Caixa Seguro IA Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex flex-col items-center select-none">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex flex-col items-center select-none pb-12 font-sans">
 
-  <!-- Cabeçalho & Configurações -->
-  <header class="w-full max-w-md my-3 flex justify-between items-center">
+  <!-- Cabeçalho Principal -->
+  <header class="w-full max-w-md my-2 flex justify-between items-center">
     <div>
-      <h1 class="text-xl font-bold tracking-tight">💰 Meu Caixa Seguro</h1>
-      <span class="text-[11px] text-emerald-400 font-medium">100% Local • Zero Rastreamento</span>
+      <h1 class="text-xl font-bold tracking-tight">💰 Caixa Seguro Pro</h1>
+      <span class="text-[11px] text-emerald-400 font-medium">100% Local • Privado</span>
     </div>
-    <button onclick="toggleConfigModal()" class="p-2 bg-slate-800 border border-slate-700 rounded-xl text-xs hover:bg-slate-700 active:scale-95 transition">
-      ⚙️ API Key
-    </button>
+    <div class="flex gap-2">
+      <button onclick="exportToCSV()" title="Exportar Backup CSV" class="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs hover:bg-slate-700 active:scale-95 transition">
+        📥 Backup
+      </button>
+      <button onclick="toggleConfigModal()" title="Configurar Chave" class="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs hover:bg-slate-700 active:scale-95 transition">
+        ⚙️ Chave
+      </button>
+    </div>
   </header>
 
-  <!-- Card de Saldo -->
+  <!-- Barra de Filtros de Período -->
+  <section class="w-full max-w-md my-3">
+    <div class="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs text-center font-medium">
+      <button id="btnFilterMonth" onclick="setFilter('month')" class="py-2 rounded-xl transition bg-indigo-600 text-white font-semibold">Mês Atual</button>
+      <button id="btnFilterWeek" onclick="setFilter('week')" class="py-2 rounded-xl transition text-slate-400 hover:text-white">Últimos 7 Dias</button>
+      <button id="btnFilterAll" onclick="setFilter('all')" class="py-2 rounded-xl transition text-slate-400 hover:text-white">Tudo</button>
+    </div>
+    
+    <!-- Seletor de mês específico (quando aplicável) -->
+    <div id="monthPickerContainer" class="mt-2 flex items-center justify-between px-1">
+      <span id="periodLabel" class="text-[11px] text-slate-400 font-medium">Exibindo dados do mês corrente</span>
+      <input type="month" id="customMonthInput" onchange="onCustomMonthChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-lg text-[11px] px-2 py-1 text-slate-200 outline-none">
+    </div>
+  </section>
+
+  <!-- Card de Saldo & Totais -->
   <section class="w-full max-w-md bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-xl mb-4 backdrop-blur">
-    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Saldo em Caixa</span>
+    <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Saldo do Período</span>
     <div id="balance" class="text-3xl font-extrabold text-white mt-1">R$ 0,00</div>
     
     <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
@@ -38,8 +58,8 @@
     </div>
   </section>
 
-  <!-- Botões de Ação com IA -->
-  <section class="w-full max-w-md grid grid-cols-2 gap-3 mb-5">
+  <!-- Botões de Ação Rápida com IA -->
+  <section class="w-full max-w-md grid grid-cols-2 gap-3 mb-4">
     <button id="voiceBtn" class="flex flex-col items-center justify-center p-4 bg-indigo-600 active:bg-indigo-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white">
       <span id="voiceIcon" class="text-2xl mb-1">🎤</span>
       <span id="voiceLabel" class="text-xs font-semibold">Gravar Áudio</span>
@@ -52,6 +72,13 @@
     </label>
   </section>
 
+  <!-- Botão de Consultoria e Insights de IA -->
+  <section class="w-full max-w-md mb-4">
+    <button onclick="requestFinancialInsights()" class="w-full flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl text-xs font-semibold text-indigo-300 active:scale-95 transition">
+      <span>✨</span> Analisar Meus Gastos com IA
+    </button>
+  </section>
+
   <!-- Feedback de Processamento -->
   <div id="statusAlert" class="hidden w-full max-w-md p-3 mb-4 rounded-xl text-xs flex items-center justify-between border bg-slate-900 border-slate-800 text-slate-300">
     <span id="statusText" class="flex items-center gap-2">
@@ -60,20 +87,44 @@
     </span>
   </div>
 
-  <!-- Lista de Lançamentos -->
-  <section class="w-full max-w-md flex-1">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Histórico</h2>
-      <button onclick="clearHistory()" class="text-[11px] text-slate-500 hover:text-rose-400 transition">Limpar tudo</button>
+  <!-- Painel de Categorias (Raio-X de Gastos) -->
+  <section class="w-full max-w-md bg-slate-900/60 border border-slate-800 p-4 rounded-2xl mb-4">
+    <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Distribuição por Categoria</h2>
+    <div id="categoryBreakdown" class="space-y-2.5">
+      <p class="text-[11px] text-slate-600 text-center py-2">Sem saídas neste período.</p>
     </div>
-    <div id="txList" class="space-y-2 pb-10"></div>
   </section>
+
+  <!-- Lista de Lançamentos do Período -->
+  <section class="w-full max-w-md flex-1">
+    <div class="flex justify-between items-center mb-2 px-1">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lançamentos do Período</h2>
+      <button onclick="clearHistory()" class="text-[10px] text-slate-500 hover:text-rose-400 transition">Zerar Tudo</button>
+    </div>
+    <div id="txList" class="space-y-2 pb-6"></div>
+  </section>
+
+  <!-- Modal de Insights da IA -->
+  <div id="insightsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>📊</span> Diagnóstico Financeiro
+        </h3>
+        <button onclick="toggleInsightsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div id="insightsContent" class="overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-1 flex-1">
+        <!-- Injetado via JS -->
+      </div>
+      <button onclick="toggleInsightsModal()" class="mt-4 w-full bg-slate-800 py-2.5 rounded-xl text-xs font-semibold text-slate-200">Fechar</button>
+    </div>
+  </div>
 
   <!-- Modal de Configuração de Chave -->
   <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm">
       <h3 class="text-base font-bold mb-2">Chave da API Gemini</h3>
-      <p class="text-xs text-slate-400 mb-4">Sua chave é armazenada exclusivamente na memória do Safari do seu celular.</p>
+      <p class="text-xs text-slate-400 mb-4">Sua chave é armazenada exclusivamente na memória do Safari do seu iPhone.</p>
       
       <input type="password" id="apiKeyInput" placeholder="Chave da API..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white mb-4 outline-none focus:border-indigo-500">
       
@@ -85,82 +136,245 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'priv_finance_txs';
+    // --- ESTADO GLOBAL & STORAGE ---
+    const STORAGE_KEY = 'priv_finance_txs_v2';
     const API_KEY_STORAGE = 'priv_gemini_key';
     
-    let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    // Migração de dados legados caso existam
+    let rawOld = localStorage.getItem('priv_finance_txs');
+    let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || rawOld || '[]');
     let currentApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
 
-    function showStatus(text, isError = false) {
-      const el = document.getElementById('statusAlert');
-      const textEl = document.getElementById('statusText');
-      el.className = `w-full max-w-md p-3 mb-4 rounded-xl text-xs flex items-center justify-between border ${isError ? 'bg-rose-950/80 border-rose-800 text-rose-300' : 'bg-slate-900 border-indigo-500/50 text-indigo-200'}`;
-      textEl.innerHTML = isError ? `⚠️ ${text}` : `<span class="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full mr-2"></span> ${text}`;
-      el.classList.remove('hidden');
-      if (isError) setTimeout(() => el.classList.add('hidden'), 5000);
-    }
+    let activeFilter = 'month'; // 'month', 'week', 'all', 'custom_month'
+    let selectedCustomMonth = ''; // 'YYYY-MM'
 
-    function hideStatus() {
-      document.getElementById('statusAlert').classList.add('hidden');
-    }
+    // Paleta de cores para categorias
+    const CATEGORY_COLORS = {
+      'Alimentação': 'bg-amber-500',
+      'Transporte': 'bg-blue-500',
+      'Moradia': 'bg-indigo-500',
+      'Saúde': 'bg-emerald-500',
+      'Lazer': 'bg-pink-500',
+      'Compras': 'bg-purple-500',
+      'Educação': 'bg-cyan-500',
+      'Serviços': 'bg-orange-500',
+      'Salário': 'bg-emerald-400',
+      'Investimento': 'bg-teal-400',
+      'Geral': 'bg-slate-500'
+    };
 
-    function toggleConfigModal() {
-      const modal = document.getElementById('configModal');
-      document.getElementById('apiKeyInput').value = currentApiKey;
-      modal.classList.toggle('hidden');
-      modal.classList.toggle('flex');
-    }
+    // --- SISTEMA DE FILTROS ---
+    function setFilter(type) {
+      activeFilter = type;
+      
+      const buttons = {
+        'month': document.getElementById('btnFilterMonth'),
+        'week': document.getElementById('btnFilterWeek'),
+        'all': document.getElementById('btnFilterAll')
+      };
 
-    function saveApiKey() {
-      const key = document.getElementById('apiKeyInput').value.trim();
-      if (!key) return alert('Insira uma chave válida!');
-      currentApiKey = key;
-      localStorage.setItem(API_KEY_STORAGE, key);
-      toggleConfigModal();
-    }
+      Object.keys(buttons).forEach(k => {
+        if (k === type) {
+          buttons[k].className = 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold';
+        } else {
+          buttons[k].className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+        }
+      });
 
-    function clearHistory() {
-      if (confirm('Tem certeza que deseja apagar todos os registros locais?')) {
-        transactions = [];
-        saveAndRender();
-      }
-    }
+      const label = document.getElementById('periodLabel');
+      if (type === 'month') label.innerText = 'Exibindo: Mês Atual';
+      if (type === 'week') label.innerText = 'Exibindo: Últimos 7 Dias';
+      if (type === 'all') label.innerText = 'Exibindo: Todo o Histórico';
 
-    function deleteTransaction(id) {
-      transactions = transactions.filter(t => t.id !== id);
       saveAndRender();
     }
 
+    function onCustomMonthChange(val) {
+      if (!val) return;
+      selectedCustomMonth = val;
+      activeFilter = 'custom_month';
+      
+      document.getElementById('btnFilterMonth').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterWeek').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterAll').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+
+      const [year, month] = val.split('-');
+      document.getElementById('periodLabel').innerText = `Exibindo: ${month}/${year}`;
+      saveAndRender();
+    }
+
+    function getFilteredTransactions() {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // 1-12
+
+      return transactions.filter(t => {
+        if (!t.isoDate) return true; // fallback
+        const tDate = new Date(t.isoDate);
+
+        if (activeFilter === 'month') {
+          return tDate.getFullYear() === currentYear && (tDate.getMonth() + 1) === currentMonth;
+        }
+        if (activeFilter === 'week') {
+          const diffTime = Math.abs(now - tDate);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          return diffDays <= 7;
+        }
+        if (activeFilter === 'custom_month' && selectedCustomMonth) {
+          const [sYear, sMonth] = selectedCustomMonth.split('-').map(Number);
+          return tDate.getFullYear() === sYear && (tDate.getMonth() + 1) === sMonth;
+        }
+        return true; // 'all'
+      });
+    }
+
+    // --- RENDERIZAÇÃO DE UI & GRÁFICOS ---
     function saveAndRender() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-      const totalInc = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-      const totalExp = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+      
+      const filtered = getFilteredTransactions();
+
+      const totalInc = filtered.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+      const totalExp = filtered.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
       const bal = totalInc - totalExp;
 
       document.getElementById('balance').innerText = `R$ ${bal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('income').innerText = `R$ ${totalInc.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('expenses').innerText = `R$ ${totalExp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+      // Render Categorias
+      renderCategoryBreakdown(filtered, totalExp);
+
+      // Render Lista de Lançamentos
       const list = document.getElementById('txList');
-      list.innerHTML = transactions.length === 0 
-        ? '<p class="text-xs text-slate-600 text-center py-6">Nenhum lançamento registrado.</p>'
-        : transactions.slice().reverse().map(t => `
-            <div class="flex justify-between items-center p-3 bg-slate-900/60 rounded-2xl border border-slate-800/80">
+      if (filtered.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-600 text-center py-6">Nenhum lançamento no período selecionado.</p>';
+      } else {
+        list.innerHTML = filtered.slice().reverse().map(t => `
+          <div class="flex justify-between items-center p-3 bg-slate-900/60 rounded-2xl border border-slate-800/80">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full ${CATEGORY_COLORS[t.category] || 'bg-slate-500'}"></span>
               <div>
                 <p class="font-medium text-xs text-slate-200">${t.description}</p>
-                <span class="text-[10px] text-slate-500">${t.category} • ${t.date}</span>
-              </div>
-              <div class="flex items-center gap-3">
-                <span class="font-bold text-xs ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
-                  ${t.type === 'income' ? '+' : '-'} R$ ${t.amount.toFixed(2)}
-                </span>
-                <button onclick="deleteTransaction(${t.id})" class="text-slate-600 hover:text-rose-400 text-xs">✕</button>
+                <span class="text-[10px] text-slate-500">${t.category} • ${t.displayDate || t.date}</span>
               </div>
             </div>
-          `).join('');
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-xs ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
+                ${t.type === 'income' ? '+' : '-'} R$ ${t.amount.toFixed(2)}
+              </span>
+              <button onclick="deleteTransaction(${t.id})" class="text-slate-600 hover:text-rose-400 text-xs px-1">✕</button>
+            </div>
+          </div>
+        `).join('');
+      }
     }
 
-    // Chamada à API atualizada para gemini-3.6-flash
+    function renderCategoryBreakdown(filteredList, totalExpense) {
+      const breakdownEl = document.getElementById('categoryBreakdown');
+      const expenses = filteredList.filter(t => t.type === 'expense');
+
+      if (expenses.length === 0 || totalExpense === 0) {
+        breakdownEl.innerHTML = '<p class="text-[11px] text-slate-600 text-center py-2">Sem saídas neste período.</p>';
+        return;
+      }
+
+      const catMap = {};
+      expenses.forEach(t => {
+        catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+      });
+
+      const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+
+      breakdownEl.innerHTML = sortedCats.map(([cat, amount]) => {
+        const pct = ((amount / totalExpense) * 100).toFixed(0);
+        const colorClass = CATEGORY_COLORS[cat] || 'bg-slate-500';
+        return `
+          <div>
+            <div class="flex justify-between text-[11px] font-medium text-slate-300 mb-1">
+              <span>${cat}</span>
+              <span>R$ ${amount.toFixed(2)} (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+              <div class="${colorClass} h-1.5 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- CONSULTORIA E INSIGHTS COM IA ---
+    async function requestFinancialInsights() {
+      const filtered = getFilteredTransactions();
+      if (filtered.length === 0) {
+        return alert('Não há gastos registrados no período selecionado para analisar.');
+      }
+
+      if (!currentApiKey) {
+        toggleConfigModal();
+        return;
+      }
+
+      showStatus('Gerando análise do consultor de IA...');
+
+      try {
+        const payloadSummary = filtered.map(t => `${t.type === 'income' ? 'RECEITA' : 'DESPESA'} | ${t.category} | ${t.description} | R$ ${t.amount.toFixed(2)}`).join('\n');
+
+        const prompt = `Você é um planejador financeiro pessoal altamente prático.
+Analise os seguintes lançamentos financeiros do período selecionado pelo usuário:
+
+${payloadSummary}
+
+Gere uma resposta em texto formatado com tópicos concisos cobrindo:
+1. 💡 **Resumo do Comportamento:** Onde o usuário mais gastou e o que chama atenção.
+2. ⚠️ **Pontos de Atenção:** Gastos supérfluos ou excessivos identificados.
+3. 🎯 **Plano Prático:** 2 ou 3 metas ou ações diretas para economizar e melhorar o saldo no próximo período.
+Seja direto, empático e focado em economia real.`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        });
+
+        if (!response.ok) throw new Error('Erro ao comunicar com a IA.');
+        
+        const result = await response.json();
+        const text = result.candidates[0].content.parts[0].text;
+        
+        document.getElementById('insightsContent').innerHTML = text
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+          .replace(/\n/g, '<br>');
+        
+        hideStatus();
+        toggleInsightsModal();
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    }
+
+    // --- EXPORTAÇÃO DE BACKUP CSV ---
+    function exportToCSV() {
+      if (transactions.length === 0) return alert('Nenhum dado para exportar.');
+
+      let csvContent = "data:text/csv;charset=utf-8,ID,Data,Tipo,Categoria,Descricao,Valor\n";
+      transactions.forEach(t => {
+        csvContent += `"${t.id}","${t.displayDate || t.date}","${t.type}","${t.category}","${t.description.replace(/"/g, '""')}","${t.amount}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `meu_caixa_backup_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // --- INTEGRAÇÃO GEMINI PARA ENTRADA DE DADOS ---
     async function callGeminiExtract(payloadPart) {
       if (!currentApiKey) {
         toggleConfigModal();
@@ -173,7 +387,7 @@
 - description (string concisa)
 - amount (float positivo, sem símbolos monetários)
 - type ("income" para receitas/ganhos ou "expense" para compras/gastos/saídas)
-- category (string simples como: Alimentação, Transporte, Saúde, Salário, Lazer, etc)
+- category (escolha exatamente uma: Alimentação, Transporte, Moradia, Saúde, Lazer, Compras, Educação, Serviços, Salário, Investimento, Geral)
 Se não for possível identificar um valor, retorne amount como 0.`;
 
       const response = await fetch(url, {
@@ -198,10 +412,10 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       }
 
       const result = await response.json();
-      const rawText = result.candidates[0].content.parts[0].text;
-      return JSON.parse(rawText);
+      return JSON.parse(result.candidates[0].content.parts[0].text);
     }
 
+    // --- CAPTURA DE FOTO ---
     document.getElementById('cameraInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -218,18 +432,20 @@ Se não for possível identificar um valor, retorne amount como 0.`;
         });
 
         if (extracted && extracted.amount > 0) {
+          const now = new Date();
           transactions.push({
             id: Date.now(),
-            description: extracted.description || 'Despesa/Receita',
+            description: extracted.description || 'Comprovante',
             amount: parseFloat(extracted.amount),
             type: extracted.type || 'expense',
             category: extracted.category || 'Geral',
-            date: new Date().toLocaleDateString('pt-BR')
+            isoDate: now.toISOString(),
+            displayDate: now.toLocaleDateString('pt-BR')
           });
           saveAndRender();
           hideStatus();
         } else {
-          showStatus('Não foi possível identificar o valor da imagem.', true);
+          showStatus('Não foi possível identificar o valor na foto.', true);
         }
       } catch (err) {
         showStatus(err.message, true);
@@ -238,6 +454,7 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       }
     });
 
+    // --- CAPTURA DE ÁUDIO ---
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
@@ -268,7 +485,7 @@ Se não for possível identificar um valor, retorne amount como 0.`;
             stream.getTracks().forEach(track => track.stop());
 
             try {
-              showStatus('Transcrevendo áudio com IA...');
+              showStatus('Transcrevendo e categorizando áudio...');
               const base64Audio = await blobToBase64(audioBlob);
               
               const extracted = await callGeminiExtract({
@@ -279,13 +496,15 @@ Se não for possível identificar um valor, retorne amount como 0.`;
               });
 
               if (extracted && extracted.amount > 0) {
+                const now = new Date();
                 transactions.push({
                   id: Date.now(),
-                  description: extracted.description || 'Lançamento',
+                  description: extracted.description || 'Lançamento por voz',
                   amount: parseFloat(extracted.amount),
                   type: extracted.type || 'expense',
                   category: extracted.category || 'Geral',
-                  date: new Date().toLocaleDateString('pt-BR')
+                  isoDate: now.toISOString(),
+                  displayDate: now.toLocaleDateString('pt-BR')
                 });
                 saveAndRender();
                 hideStatus();
@@ -314,6 +533,53 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       }
     });
 
+    // --- CONTROLE DE MODAIS E UTILITÁRIOS ---
+    function showStatus(text, isError = false) {
+      const el = document.getElementById('statusAlert');
+      const textEl = document.getElementById('statusText');
+      el.className = `w-full max-w-md p-3 mb-4 rounded-xl text-xs flex items-center justify-between border ${isError ? 'bg-rose-950/80 border-rose-800 text-rose-300' : 'bg-slate-900 border-indigo-500/50 text-indigo-200'}`;
+      textEl.innerHTML = isError ? `⚠️ ${text}` : `<span class="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full mr-2"></span> ${text}`;
+      el.classList.remove('hidden');
+      if (isError) setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    function hideStatus() {
+      document.getElementById('statusAlert').classList.add('hidden');
+    }
+
+    function toggleConfigModal() {
+      const modal = document.getElementById('configModal');
+      document.getElementById('apiKeyInput').value = currentApiKey;
+      modal.classList.toggle('hidden');
+      modal.classList.toggle('flex');
+    }
+
+    function toggleInsightsModal() {
+      const modal = document.getElementById('insightsModal');
+      modal.classList.toggle('hidden');
+      modal.classList.toggle('flex');
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) return alert('Insira uma chave válida!');
+      currentApiKey = key;
+      localStorage.setItem(API_KEY_STORAGE, key);
+      toggleConfigModal();
+    }
+
+    function clearHistory() {
+      if (confirm('Atenção: Isso irá apagar todos os registros do seu aparelho. Deseja continuar?')) {
+        transactions = [];
+        saveAndRender();
+      }
+    }
+
+    function deleteTransaction(id) {
+      transactions = transactions.filter(t => t.id !== id);
+      saveAndRender();
+    }
+
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -332,6 +598,9 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       });
     }
 
+    // Inicialização
+    const today = new Date();
+    document.getElementById('customMonthInput').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2, '0')}`;
     saveAndRender();
   </script>
 </body>
