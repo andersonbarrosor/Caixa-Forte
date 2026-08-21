@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Caixa Seguro IA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex flex-col items-center select-none">
+
+  <!-- Cabeçalho & Configurações -->
+  <header class="w-full max-w-md my-3 flex justify-between items-center">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">💰 Meu Caixa Seguro</h1>
+      <span class="text-[11px] text-emerald-400 font-medium">100% Local • Zero Rastreamento</span>
+    </div>
+    <button onclick="toggleConfigModal()" class="p-2 bg-slate-800 border border-slate-700 rounded-xl text-xs hover:bg-slate-700 active:scale-95 transition">
+      ⚙️ API Key
+    </button>
+  </header>
+
+  <!-- Card de Saldo -->
+  <section class="w-full max-w-md bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-xl mb-4 backdrop-blur">
+    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Saldo em Caixa</span>
+    <div id="balance" class="text-3xl font-extrabold text-white mt-1">R$ 0,00</div>
+    
+    <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
+      <div>
+        <span class="text-[11px] text-emerald-400 font-medium uppercase">Entradas</span>
+        <p id="income" class="text-base font-semibold text-slate-200">R$ 0,00</p>
+      </div>
+      <div>
+        <span class="text-[11px] text-rose-400 font-medium uppercase">Saídas</span>
+        <p id="expenses" class="text-base font-semibold text-slate-200">R$ 0,00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Botões de Ação com IA -->
+  <section class="w-full max-w-md grid grid-cols-2 gap-3 mb-5">
+    <button id="voiceBtn" class="flex flex-col items-center justify-center p-4 bg-indigo-600 active:bg-indigo-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white">
+      <span id="voiceIcon" class="text-2xl mb-1">🎤</span>
+      <span id="voiceLabel" class="text-xs font-semibold">Gravar Áudio</span>
+    </button>
+    
+    <label class="flex flex-col items-center justify-center p-4 bg-purple-600 active:bg-purple-700 rounded-2xl shadow-lg font-medium cursor-pointer transition active:scale-95 text-center text-white">
+      <span class="text-2xl mb-1">📸</span>
+      <span class="text-xs font-semibold">Foto do Recibo</span>
+      <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
+    </label>
+  </section>
+
+  <!-- Feedback de Processamento -->
+  <div id="statusAlert" class="hidden w-full max-w-md p-3 mb-4 rounded-xl text-xs flex items-center justify-between border bg-slate-900 border-slate-800 text-slate-300">
+    <span id="statusText" class="flex items-center gap-2">
+      <span class="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"></span>
+      Processando com IA...
+    </span>
+  </div>
+
+  <!-- Lista de Lançamentos -->
+  <section class="w-full max-w-md flex-1">
+    <div class="flex justify-between items-center mb-2">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Histórico</h2>
+      <button onclick="clearHistory()" class="text-[11px] text-slate-500 hover:text-rose-400 transition">Limpar tudo</button>
+    </div>
+    <div id="txList" class="space-y-2 pb-10"></div>
+  </section>
+
+  <!-- Modal de Configuração de Chave -->
+  <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm">
+      <h3 class="text-base font-bold mb-2">Chave da API Gemini</h3>
+      <p class="text-xs text-slate-400 mb-4">Sua chave é armazenada exclusivamente na memória do Safari do seu celular.</p>
+      
+      <input type="password" id="apiKeyInput" placeholder="Chave da API..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white mb-4 outline-none focus:border-indigo-500">
+      
+      <div class="flex gap-2">
+        <button onclick="saveApiKey()" class="flex-1 bg-indigo-600 py-2.5 rounded-xl font-semibold text-xs text-white">Salvar</button>
+        <button onclick="toggleConfigModal()" class="flex-1 bg-slate-800 py-2.5 rounded-xl text-xs text-slate-300">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'priv_finance_txs';
+    const API_KEY_STORAGE = 'priv_gemini_key';
+    
+    let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let currentApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
+
+    function showStatus(text, isError = false) {
+      const el = document.getElementById('statusAlert');
+      const textEl = document.getElementById('statusText');
+      el.className = `w-full max-w-md p-3 mb-4 rounded-xl text-xs flex items-center justify-between border ${isError ? 'bg-rose-950/80 border-rose-800 text-rose-300' : 'bg-slate-900 border-indigo-500/50 text-indigo-200'}`;
+      textEl.innerHTML = isError ? `⚠️ ${text}` : `<span class="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full mr-2"></span> ${text}`;
+      el.classList.remove('hidden');
+      if (isError) setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    function hideStatus() {
+      document.getElementById('statusAlert').classList.add('hidden');
+    }
+
+    function toggleConfigModal() {
+      const modal = document.getElementById('configModal');
+      document.getElementById('apiKeyInput').value = currentApiKey;
+      modal.classList.toggle('hidden');
+      modal.classList.toggle('flex');
+    }
+
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) return alert('Insira uma chave válida!');
+      currentApiKey = key;
+      localStorage.setItem(API_KEY_STORAGE, key);
+      toggleConfigModal();
+    }
+
+    function clearHistory() {
+      if (confirm('Tem certeza que deseja apagar todos os registros locais?')) {
+        transactions = [];
+        saveAndRender();
+      }
+    }
+
+    function deleteTransaction(id) {
+      transactions = transactions.filter(t => t.id !== id);
+      saveAndRender();
+    }
+
+    function saveAndRender() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+      const totalInc = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+      const totalExp = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+      const bal = totalInc - totalExp;
+
+      document.getElementById('balance').innerText = `R$ ${bal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('income').innerText = `R$ ${totalInc.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('expenses').innerText = `R$ ${totalExp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      const list = document.getElementById('txList');
+      list.innerHTML = transactions.length === 0 
+        ? '<p class="text-xs text-slate-600 text-center py-6">Nenhum lançamento registrado.</p>'
+        : transactions.slice().reverse().map(t => `
+            <div class="flex justify-between items-center p-3 bg-slate-900/60 rounded-2xl border border-slate-800/80">
+              <div>
+                <p class="font-medium text-xs text-slate-200">${t.description}</p>
+                <span class="text-[10px] text-slate-500">${t.category} • ${t.date}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-bold text-xs ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
+                  ${t.type === 'income' ? '+' : '-'} R$ ${t.amount.toFixed(2)}
+                </span>
+                <button onclick="deleteTransaction(${t.id})" class="text-slate-600 hover:text-rose-400 text-xs">✕</button>
+              </div>
+            </div>
+          `).join('');
+    }
+
+    // Chamada à API atualizada para gemini-3.6-flash
+    async function callGeminiExtract(payloadPart) {
+      if (!currentApiKey) {
+        toggleConfigModal();
+        throw new Error('Configure sua API Key primeiro.');
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
+
+      const systemPrompt = `Você é um extrator contábil. Extraia as informações financeiras da entrada e retorne APENAS um objeto JSON com:
+- description (string concisa)
+- amount (float positivo, sem símbolos monetários)
+- type ("income" para receitas/ganhos ou "expense" para compras/gastos/saídas)
+- category (string simples como: Alimentação, Transporte, Saúde, Salário, Lazer, etc)
+Se não for possível identificar um valor, retorne amount como 0.`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: systemPrompt },
+              payloadPart
+            ]
+          }],
+          generationConfig: {
+            response_mime_type: "application/json"
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Erro na chamada à API.');
+      }
+
+      const result = await response.json();
+      const rawText = result.candidates[0].content.parts[0].text;
+      return JSON.parse(rawText);
+    }
+
+    document.getElementById('cameraInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        showStatus('Lendo comprovante com IA...');
+        const base64Data = await fileToBase64(file);
+        
+        const extracted = await callGeminiExtract({
+          inline_data: {
+            mime_type: file.type || "image/jpeg",
+            data: base64Data.split(',')[1]
+          }
+        });
+
+        if (extracted && extracted.amount > 0) {
+          transactions.push({
+            id: Date.now(),
+            description: extracted.description || 'Despesa/Receita',
+            amount: parseFloat(extracted.amount),
+            type: extracted.type || 'expense',
+            category: extracted.category || 'Geral',
+            date: new Date().toLocaleDateString('pt-BR')
+          });
+          saveAndRender();
+          hideStatus();
+        } else {
+          showStatus('Não foi possível identificar o valor da imagem.', true);
+        }
+      } catch (err) {
+        showStatus(err.message, true);
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    const voiceBtn = document.getElementById('voiceBtn');
+    const voiceIcon = document.getElementById('voiceIcon');
+    const voiceLabel = document.getElementById('voiceLabel');
+
+    voiceBtn.addEventListener('click', async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          let mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+          }
+
+          mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
+            stream.getTracks().forEach(track => track.stop());
+
+            try {
+              showStatus('Transcrevendo áudio com IA...');
+              const base64Audio = await blobToBase64(audioBlob);
+              
+              const extracted = await callGeminiExtract({
+                inline_data: {
+                  mime_type: audioBlob.type || 'audio/mp4',
+                  data: base64Audio.split(',')[1]
+                }
+              });
+
+              if (extracted && extracted.amount > 0) {
+                transactions.push({
+                  id: Date.now(),
+                  description: extracted.description || 'Lançamento',
+                  amount: parseFloat(extracted.amount),
+                  type: extracted.type || 'expense',
+                  category: extracted.category || 'Geral',
+                  date: new Date().toLocaleDateString('pt-BR')
+                });
+                saveAndRender();
+                hideStatus();
+              } else {
+                showStatus('Não entendi o valor falado. Tente novamente.', true);
+              }
+            } catch (err) {
+              showStatus(err.message, true);
+            }
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          voiceBtn.className = 'flex flex-col items-center justify-center p-4 bg-rose-600 active:bg-rose-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white animate-pulse';
+          voiceIcon.innerText = '⏹️';
+          voiceLabel.innerText = 'Parar Gravação';
+        } catch (err) {
+          showStatus('Permissão de microfone negada.', true);
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        voiceBtn.className = 'flex flex-col items-center justify-center p-4 bg-indigo-600 active:bg-indigo-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white';
+        voiceIcon.innerText = '🎤';
+        voiceLabel.innerText = 'Gravar Áudio';
+      }
+    });
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    saveAndRender();
+  </script>
+</body>
+</html>
