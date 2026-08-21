@@ -1,14 +1,346 @@
-// --- GEMINI PROMPT DE EXTRAÇÃO COM TRATAMENTO AMIGÁVEL DE ERRO ---
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Caixa Seguro IA Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex flex-col items-center select-none pb-12 font-sans">
+
+  <!-- Cabeçalho Principal -->
+  <header class="w-full max-w-md my-2 flex justify-between items-center">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">💰 Caixa Seguro Pro</h1>
+      <span class="text-[11px] text-emerald-400 font-medium">100% Local • Privado</span>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="generatePDFReport()" title="Exportar Relatório em PDF" class="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs hover:bg-slate-700 active:scale-95 transition flex items-center gap-1 text-slate-200">
+        📄 PDF
+      </button>
+      <button onclick="toggleConfigModal()" title="Configurar Chave" class="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs hover:bg-slate-700 active:scale-95 transition text-slate-200">
+        ⚙️ Chave
+      </button>
+    </div>
+  </header>
+
+  <!-- Filtros de Período -->
+  <section class="w-full max-w-md my-3">
+    <div class="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs text-center font-medium">
+      <button id="btnFilterMonth" onclick="setFilter('month')" class="py-2 rounded-xl transition bg-indigo-600 text-white font-semibold">Mês Atual</button>
+      <button id="btnFilterWeek" onclick="setFilter('week')" class="py-2 rounded-xl transition text-slate-400 hover:text-white">Últimos 7 Dias</button>
+      <button id="btnFilterAll" onclick="setFilter('all')" class="py-2 rounded-xl transition text-slate-400 hover:text-white">Tudo</button>
+    </div>
+    
+    <div class="mt-2.5 flex items-center justify-between px-2 bg-slate-900/40 py-1.5 rounded-xl border border-slate-800/60">
+      <span id="periodLabel" class="text-[11px] text-slate-400 font-medium">Mês Atual</span>
+      <div class="flex items-center gap-1">
+        <span class="text-[10px] text-slate-500">Mudar mês:</span>
+        <input type="month" id="customMonthInput" onchange="onCustomMonthChange(this.value)" class="bg-slate-800 border border-slate-700 rounded-lg text-[11px] px-2 py-0.5 text-slate-200 outline-none">
+      </div>
+    </div>
+  </section>
+
+  <!-- Card de Saldo & Totais -->
+  <section class="w-full max-w-md bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-xl mb-4 backdrop-blur">
+    <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Saldo do Período</span>
+    <div id="balance" class="text-3xl font-extrabold text-white mt-1">R$ 0,00</div>
+    
+    <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
+      <div>
+        <span class="text-[11px] text-emerald-400 font-medium uppercase">Entradas</span>
+        <p id="income" class="text-base font-semibold text-slate-200">R$ 0,00</p>
+      </div>
+      <div>
+        <span class="text-[11px] text-rose-400 font-medium uppercase">Saídas</span>
+        <p id="expenses" class="text-base font-semibold text-slate-200">R$ 0,00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Entrada Manual / Digitação por Texto -->
+  <section class="w-full max-w-md mb-3 bg-slate-900/80 border border-slate-800 p-3 rounded-2xl">
+    <div class="flex gap-2">
+      <input type="text" id="textInput" placeholder="Ex: R$ 35 mercado ou Uber 22" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+      <button onclick="handleTextSubmit()" class="px-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-xs font-semibold rounded-xl text-white transition">
+        Lançar
+      </button>
+    </div>
+  </section>
+
+  <!-- Botões de Ação Rápida (Voz e Foto/PDF) -->
+  <section class="w-full max-w-md grid grid-cols-2 gap-3 mb-3">
+    <button id="voiceBtn" class="flex flex-col items-center justify-center p-3.5 bg-indigo-600 active:bg-indigo-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white">
+      <span id="voiceIcon" class="text-xl mb-0.5">🎤</span>
+      <span id="voiceLabel" class="text-xs font-semibold">Gravar Áudio</span>
+    </button>
+    
+    <label class="flex flex-col items-center justify-center p-3.5 bg-purple-600 active:bg-purple-700 rounded-2xl shadow-lg font-medium cursor-pointer transition active:scale-95 text-center text-white">
+      <span class="text-xl mb-0.5">📄</span>
+      <span class="text-xs font-semibold">Foto / Recibo / PDF</span>
+      <input type="file" accept="image/*,application/pdf" id="fileInput" class="hidden">
+    </label>
+  </section>
+
+  <!-- Botão de Consultoria IA -->
+  <section class="w-full max-w-md mb-4">
+    <button onclick="requestFinancialInsights()" class="w-full flex items-center justify-center gap-2 p-3 bg-slate-800/90 hover:bg-slate-700 border border-slate-700 rounded-2xl text-xs font-semibold text-indigo-300 active:scale-95 transition">
+      <span>✨</span> Analisar Meus Gastos com IA
+    </button>
+  </section>
+
+  <!-- Feedback de Processamento -->
+  <div id="statusAlert" class="hidden w-full max-w-md p-3 mb-4 rounded-xl text-xs flex items-center justify-between border bg-slate-900 border-slate-800 text-slate-300">
+    <span id="statusText" class="flex items-center gap-2">
+      <span class="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full"></span>
+      Processando com IA...
+    </span>
+  </div>
+
+  <!-- Painel de Categorias (Donut + Barras) -->
+  <section class="w-full max-w-md bg-slate-900/60 border border-slate-800 p-4 rounded-2xl mb-4">
+    <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Distribuição por Categoria</h2>
+    
+    <div id="donutContainer" class="flex flex-col items-center justify-center py-2 border-b border-slate-800/60 mb-3">
+      <div class="relative w-36 h-36 flex items-center justify-center">
+        <svg id="donutSvg" class="w-full h-full transform -rotate-90" viewBox="0 0 100 100"></svg>
+        <div class="absolute flex flex-col items-center justify-center text-center">
+          <span class="text-[9px] text-slate-400 uppercase font-medium">Total Saídas</span>
+          <span id="donutCenterTotal" class="text-xs font-bold text-white mt-0.5">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="categoryBreakdown" class="space-y-2.5">
+      <p class="text-[11px] text-slate-600 text-center py-2">Sem saídas neste período.</p>
+    </div>
+  </section>
+
+  <!-- Lista de Lançamentos -->
+  <section class="w-full max-w-md flex-1">
+    <div class="flex justify-between items-center mb-2 px-1">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lançamentos do Período</h2>
+      <button onclick="clearHistory()" class="text-[10px] text-slate-500 hover:text-rose-400 transition">Zerar Tudo</button>
+    </div>
+    <div id="txList" class="space-y-2 pb-6"></div>
+  </section>
+
+  <!-- Modal de Insights da IA -->
+  <div id="insightsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <span>📊</span> Diagnóstico Financeiro
+        </h3>
+        <button onclick="toggleInsightsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <div id="insightsContent" class="overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-1 flex-1"></div>
+      <button onclick="toggleInsightsModal()" class="mt-4 w-full bg-slate-800 py-2.5 rounded-xl text-xs font-semibold text-slate-200">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Modal de Configuração de Chave -->
+  <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm">
+      <h3 class="text-base font-bold mb-2">Chave da API Gemini</h3>
+      <p class="text-xs text-slate-400 mb-4">Sua chave fica gravada apenas no seu celular.</p>
+      <input type="password" id="apiKeyInput" placeholder="AQ..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white mb-4 outline-none focus:border-indigo-500">
+      <div class="flex gap-2">
+        <button onclick="saveApiKey()" class="flex-1 bg-indigo-600 py-2.5 rounded-xl font-semibold text-xs text-white">Salvar</button>
+        <button onclick="toggleConfigModal()" class="flex-1 bg-slate-800 py-2.5 rounded-xl text-xs text-slate-300">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pdfExportContainer" class="hidden"></div>
+
+  <script>
+    const STORAGE_KEY = 'priv_finance_txs_v5';
+    const API_KEY_STORAGE = 'priv_gemini_key';
+    const LAST_INSIGHT_STORAGE = 'priv_last_insight';
+
+    let rawOld = localStorage.getItem('priv_finance_txs_v4') || localStorage.getItem('priv_finance_txs_v3') || localStorage.getItem('priv_finance_txs');
+    let loadedTxs = JSON.parse(localStorage.getItem(STORAGE_KEY) || rawOld || '[]');
+    
+    let transactions = loadedTxs.map(t => {
+      const dateStr = t.dateKey || (t.isoDate ? t.isoDate.slice(0, 10) : new Date(t.id || Date.now()).toISOString().slice(0, 10));
+      return {
+        ...t,
+        dateKey: dateStr,
+        displayDate: t.displayDate || dateStr.split('-').reverse().join('/')
+      };
+    });
+
+    let currentApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
+    let activeFilter = 'month';
+    let selectedCustomMonth = '';
+
+    const CATEGORY_META = {
+      'Contas & Moradia': { color: '#6366f1', tailwind: 'bg-indigo-500' },
+      'Alimentação': { color: '#f59e0b', tailwind: 'bg-amber-500' },
+      'Transporte': { color: '#3b82f6', tailwind: 'bg-blue-500' },
+      'Saúde & Beleza': { color: '#10b981', tailwind: 'bg-emerald-500' },
+      'Lazer & Assinaturas': { color: '#ec4899', tailwind: 'bg-pink-500' },
+      'Compras & Pessoal': { color: '#a855f7', tailwind: 'bg-purple-500' },
+      'Educação': { color: '#06b6d4', tailwind: 'bg-cyan-500' },
+      'Ganhos / Renda': { color: '#34d399', tailwind: 'bg-emerald-400' },
+      'Investimentos': { color: '#2dd4bf', tailwind: 'bg-teal-400' },
+      'Outros': { color: '#64748b', tailwind: 'bg-slate-500' }
+    };
+
+    function getTodayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function setFilter(type) {
+      activeFilter = type;
+      document.getElementById('btnFilterMonth').className = type === 'month' ? 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold' : 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterWeek').className = type === 'week' ? 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold' : 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterAll').className = type === 'all' ? 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold' : 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+
+      const label = document.getElementById('periodLabel');
+      if (type === 'month') {
+        const d = new Date();
+        label.innerText = `Mês Atual (${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()})`;
+      } else if (type === 'week') {
+        label.innerText = 'Últimos 7 Dias';
+      } else if (type === 'all') {
+        label.innerText = 'Todo o Histórico';
+      }
+
+      saveAndRender();
+    }
+
+    function onCustomMonthChange(val) {
+      if (!val) return;
+      selectedCustomMonth = val;
+      activeFilter = 'custom_month';
+      
+      document.getElementById('btnFilterMonth').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterWeek').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterAll').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+
+      const [year, month] = val.split('-');
+      document.getElementById('periodLabel').innerText = `Mês: ${month}/${year}`;
+      saveAndRender();
+    }
+
+    function getFilteredTransactions() {
+      const todayStr = getTodayKey();
+      const currentMonthPrefix = todayStr.slice(0, 7);
+
+      return transactions.filter(t => {
+        const tDate = t.dateKey || todayStr;
+        if (activeFilter === 'month') return tDate.startsWith(currentMonthPrefix);
+        if (activeFilter === 'week') {
+          const diffDays = (new Date(todayStr) - new Date(tDate)) / (1000 * 60 * 60 * 24);
+          return diffDays >= 0 && diffDays <= 7;
+        }
+        if (activeFilter === 'custom_month' && selectedCustomMonth) return tDate.startsWith(selectedCustomMonth);
+        return true;
+      });
+    }
+
+    function saveAndRender() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+      const filtered = getFilteredTransactions();
+
+      const totalInc = filtered.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+      const totalExp = filtered.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+      const bal = totalInc - totalExp;
+
+      document.getElementById('balance').innerText = `R$ ${bal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('income').innerText = `R$ ${totalInc.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('expenses').innerText = `R$ ${totalExp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      renderCategoryBreakdown(filtered, totalExp);
+
+      const list = document.getElementById('txList');
+      if (filtered.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-600 text-center py-6">Nenhum lançamento no período selecionado.</p>';
+      } else {
+        list.innerHTML = filtered.slice().reverse().map(t => `
+          <div class="flex justify-between items-center p-3 bg-slate-900/60 rounded-2xl border border-slate-800/80">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full ${CATEGORY_META[t.category]?.tailwind || 'bg-slate-500'}"></span>
+              <div>
+                <p class="font-medium text-xs text-slate-200">${t.description}</p>
+                <span class="text-[10px] text-slate-500">${t.category} • ${t.displayDate}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-xs ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">
+                ${t.type === 'income' ? '+' : '-'} R$ ${t.amount.toFixed(2)}
+              </span>
+              <button onclick="deleteTransaction(${t.id})" class="text-slate-600 hover:text-rose-400 text-xs px-1">✕</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function renderCategoryBreakdown(filteredList, totalExpense) {
+      const breakdownEl = document.getElementById('categoryBreakdown');
+      const donutSvg = document.getElementById('donutSvg');
+      const donutTotalEl = document.getElementById('donutCenterTotal');
+      const expenses = filteredList.filter(t => t.type === 'expense');
+
+      donutTotalEl.innerText = `R$ ${totalExpense.toFixed(2)}`;
+
+      if (expenses.length === 0 || totalExpense === 0) {
+        donutSvg.innerHTML = `<circle cx="50" cy="50" r="38" fill="none" stroke="#1e293b" stroke-width="12" />`;
+        breakdownEl.innerHTML = '<p class="text-[11px] text-slate-600 text-center py-2">Sem saídas neste período.</p>';
+        return;
+      }
+
+      const catMap = {};
+      expenses.forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+      const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+
+      const circumference = 2 * Math.PI * 38;
+      let accumulatedOffset = 0;
+      let svgHtml = '';
+
+      sortedCats.forEach(([cat, amount]) => {
+        const ratio = amount / totalExpense;
+        const dashLength = ratio * circumference;
+        const color = CATEGORY_META[cat]?.color || '#64748b';
+        svgHtml += `<circle cx="50" cy="50" r="38" fill="none" stroke="${color}" stroke-width="12" stroke-dasharray="${dashLength} ${circumference}" stroke-dashoffset="-${accumulatedOffset}" />`;
+        accumulatedOffset += dashLength;
+      });
+
+      donutSvg.innerHTML = svgHtml;
+
+      breakdownEl.innerHTML = sortedCats.map(([cat, amount]) => {
+        const pct = ((amount / totalExpense) * 100).toFixed(0);
+        const colorClass = CATEGORY_META[cat]?.tailwind || 'bg-slate-500';
+        return `
+          <div>
+            <div class="flex justify-between text-[11px] font-medium text-slate-300 mb-1">
+              <span>${cat}</span>
+              <span>R$ ${amount.toFixed(2)} (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+              <div class="${colorClass} h-1.5 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- CHAMADA COM SUPORTE A FALLBACK DE MODELOS ---
     async function callGeminiExtract(payloadPart) {
       if (!navigator.onLine) {
-        throw new Error('Sem conexão com a internet. Verifique sua rede.');
+        throw new Error('Sem conexão com a internet.');
       }
       if (!currentApiKey) {
         toggleConfigModal();
         throw new Error('Configure sua API Key primeiro.');
       }
-
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
 
       const systemPrompt = `Você é um extrator contábil. Extraia as informações financeiras da entrada e retorne APENAS um objeto JSON com:
 - description: breve resumo do gasto ou ganho
@@ -27,34 +359,385 @@
   * "Outros": qualquer outro gasto que não pertença a nenhuma acima.
 Se não conseguir identificar valor, retorne amount como 0.`;
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: systemPrompt }, payloadPart] }],
-          generationConfig: { response_mime_type: "application/json" }
-        })
-      });
+      // Tenta primeiro o modelo Flash mais estável
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      let lastError = null;
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const rawMsg = err.error?.message || '';
+      for (const model of modelsToTry) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentApiKey}`;
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: systemPrompt }, payloadPart] }],
+              generationConfig: { response_mime_type: "application/json" }
+            })
+          });
 
-        // Tradução e simplificação inteligente de limites e erros
-        if (response.status === 429 || rawMsg.includes('Quota exceeded') || rawMsg.includes('quota')) {
-          const retryMatch = rawMsg.match(/retry in ([\d\.]+)s/i);
-          if (retryMatch) {
-            const seconds = Math.ceil(parseFloat(retryMatch[1]));
-            throw new Error(`Limite temporário de requisições. Aguarde ${seconds} segundos para tentar de novo.`);
+          if (response.ok) {
+            const result = await response.json();
+            return JSON.parse(result.candidates[0].content.parts[0].text);
           }
-          throw new Error('Limite momentâneo atingido. Aguarde cerca de 30 segundos.');
-        } else if (response.status === 400 || rawMsg.includes('API_KEY_INVALID') || rawMsg.includes('key not valid')) {
-          throw new Error('Chave de API inválida. Verifique em ⚙️ Chave.');
-        }
 
-        throw new Error('Não foi possível conectar com a IA no momento. Tente novamente.');
+          const errJson = await response.json().catch(() => ({}));
+          const errMsg = errJson.error?.message || '';
+
+          if (response.status === 429 || errMsg.includes('Quota exceeded') || errMsg.includes('quota')) {
+            lastError = new Error('Limite da cota temporária atingido. Aguarde cerca de 30 segundos.');
+          } else {
+            lastError = new Error(errMsg || 'Erro na chamada com a IA.');
+          }
+        } catch (e) {
+          lastError = e;
+        }
       }
 
-      const result = await response.json();
-      return JSON.parse(result.candidates[0].content.parts[0].text);
+      throw lastError || new Error('Não foi possível conectar com a IA no momento.');
     }
+
+    async function handleTextSubmit() {
+      const input = document.getElementById('textInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      try {
+        showStatus('Interpretando texto com IA...');
+        const extracted = await callGeminiExtract({ text: `Texto informado pelo usuário: "${text}"` });
+        
+        if (extracted && extracted.amount > 0) {
+          transactions.push({
+            id: Date.now(),
+            description: extracted.description || text,
+            amount: parseFloat(extracted.amount),
+            type: extracted.type || 'expense',
+            category: extracted.category || 'Outros',
+            dateKey: getTodayKey(),
+            displayDate: new Date().toLocaleDateString('pt-BR')
+          });
+          saveAndRender();
+          input.value = '';
+          hideStatus();
+        } else {
+          showStatus('Não foi possível identificar o valor no texto.', true);
+        }
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    }
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+        showStatus(isPdf ? 'Lendo PDF com IA...' : 'Lendo imagem com IA...');
+        const base64Data = await fileToBase64(file);
+        const mimeType = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
+
+        const extracted = await callGeminiExtract({
+          inline_data: {
+            mime_type: mimeType,
+            data: base64Data.split(',')[1]
+          }
+        });
+
+        if (extracted && extracted.amount > 0) {
+          transactions.push({
+            id: Date.now(),
+            description: extracted.description || (isPdf ? 'Documento PDF' : 'Comprovante'),
+            amount: parseFloat(extracted.amount),
+            type: extracted.type || 'expense',
+            category: extracted.category || 'Outros',
+            dateKey: getTodayKey(),
+            displayDate: new Date().toLocaleDateString('pt-BR')
+          });
+          saveAndRender();
+          hideStatus();
+        } else {
+          showStatus('Não foi possível identificar o valor no arquivo.', true);
+        }
+      } catch (err) {
+        showStatus(err.message, true);
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    const voiceBtn = document.getElementById('voiceBtn');
+    const voiceIcon = document.getElementById('voiceIcon');
+    const voiceLabel = document.getElementById('voiceLabel');
+
+    voiceBtn.addEventListener('click', async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          let mimeType = 'audio/mp4';
+          if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+          }
+
+          mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/mp4' });
+            stream.getTracks().forEach(track => track.stop());
+
+            try {
+              showStatus('Processando áudio com IA...');
+              const base64Audio = await blobToBase64(audioBlob);
+              const extracted = await callGeminiExtract({
+                inline_data: {
+                  mime_type: audioBlob.type || 'audio/mp4',
+                  data: base64Audio.split(',')[1]
+                }
+              });
+
+              if (extracted && extracted.amount > 0) {
+                transactions.push({
+                  id: Date.now(),
+                  description: extracted.description || 'Lançamento por voz',
+                  amount: parseFloat(extracted.amount),
+                  type: extracted.type || 'expense',
+                  category: extracted.category || 'Outros',
+                  dateKey: getTodayKey(),
+                  displayDate: new Date().toLocaleDateString('pt-BR')
+                });
+                saveAndRender();
+                hideStatus();
+              } else {
+                showStatus('Não entendi o valor falado.', true);
+              }
+            } catch (err) {
+              showStatus(err.message, true);
+            }
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          voiceBtn.className = 'flex flex-col items-center justify-center p-3.5 bg-rose-600 active:bg-rose-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white animate-pulse';
+          voiceIcon.innerText = '⏹️';
+          voiceLabel.innerText = 'Parar Gravação';
+        } catch (err) {
+          showStatus('Microfone não autorizado.', true);
+        }
+      } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        voiceBtn.className = 'flex flex-col items-center justify-center p-3.5 bg-indigo-600 active:bg-indigo-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white';
+        voiceIcon.innerText = '🎤';
+        voiceLabel.innerText = 'Gravar Áudio';
+      }
+    });
+
+    async function requestFinancialInsights() {
+      const filtered = getFilteredTransactions();
+      if (filtered.length === 0) return alert('Nenhum dado no período selecionado.');
+      if (!currentApiKey) return toggleConfigModal();
+
+      showStatus('Gerando diagnóstico com IA...');
+      try {
+        const payloadSummary = filtered.map(t => `${t.type === 'income' ? 'RECEITA' : 'DESPESA'} | ${t.category} | ${t.description} | R$ ${t.amount.toFixed(2)}`).join('\n');
+
+        const prompt = `Você é um planejador financeiro pessoal altamente prático.
+Analise os seguintes lançamentos financeiros do período selecionado:
+
+${payloadSummary}
+
+Gere uma resposta com formatação limpa e tópicos concisos:
+1. 💡 **Onde mais gastou:** Principais categorias e valores.
+2. ⚠️ **Pontos de Atenção:** Gastos supérfluos ou excessivos.
+3. 🎯 **Plano de Ação:** 2 ou 3 metas práticas para economizar no próximo período.`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${currentApiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        if (!response.ok) throw new Error('Erro ao comunicar com a IA.');
+        const result = await response.json();
+        const text = result.candidates[0].content.parts[0].text;
+        
+        localStorage.setItem(LAST_INSIGHT_STORAGE, text);
+        
+        document.getElementById('insightsContent').innerHTML = text
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+          .replace(/\n/g, '<br>');
+        
+        hideStatus();
+        toggleInsightsModal();
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    }
+
+    async function generatePDFReport() {
+      const filtered = getFilteredTransactions();
+      if (filtered.length === 0) return alert('Sem dados no período para gerar PDF.');
+
+      showStatus('Montando relatório em PDF...');
+
+      const totalInc = filtered.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+      const totalExp = filtered.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+      const bal = totalInc - totalExp;
+      const lastInsight = localStorage.getItem(LAST_INSIGHT_STORAGE) || 'Nenhum diagnóstico recente gerado.';
+
+      const catMap = {};
+      filtered.filter(t => t.type === 'expense').forEach(t => {
+        catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+      });
+
+      const catRows = Object.entries(catMap).map(([cat, val]) => `
+        <tr>
+          <td style="padding: 6px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px;">${cat}</td>
+          <td style="padding: 6px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-align: right; font-weight: bold;">R$ ${val.toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      const txRows = filtered.slice().reverse().map(t => `
+        <tr>
+          <td style="padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 10px;">${t.displayDate}</td>
+          <td style="padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 10px;">${t.description}</td>
+          <td style="padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 10px;">${t.category}</td>
+          <td style="padding: 5px 8px; border-bottom: 1px solid #f1f5f9; font-size: 10px; text-align: right; color: ${t.type === 'income' ? '#059669' : '#e11d48'}; font-weight: bold;">
+            ${t.type === 'income' ? '+' : '-'} R$ ${t.amount.toFixed(2)}
+          </td>
+        </tr>
+      `).join('');
+
+      const container = document.getElementById('pdfExportContainer');
+      container.innerHTML = `
+        <div style="font-family: Arial, sans-serif; color: #0f172a; padding: 20px; background: #ffffff;">
+          <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h1 style="font-size: 18px; margin: 0; color: #1e1b4b;">Relatório Financeiro Pessoal</h1>
+              <p style="font-size: 11px; margin: 2px 0 0 0; color: #64748b;">Período: ${document.getElementById('periodLabel').innerText} | Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div style="flex: 1; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span style="font-size: 9px; color: #64748b; text-transform: uppercase;">Saldo</span>
+              <p style="font-size: 14px; font-weight: bold; margin: 2px 0 0 0; color: ${bal >= 0 ? '#059669' : '#e11d48'};">R$ ${bal.toFixed(2)}</p>
+            </div>
+            <div style="flex: 1; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span style="font-size: 9px; color: #64748b; text-transform: uppercase;">Entradas</span>
+              <p style="font-size: 14px; font-weight: bold; margin: 2px 0 0 0; color: #059669;">R$ ${totalInc.toFixed(2)}</p>
+            </div>
+            <div style="flex: 1; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <span style="font-size: 9px; color: #64748b; text-transform: uppercase;">Saídas</span>
+              <p style="font-size: 14px; font-weight: bold; margin: 2px 0 0 0; color: #e11d48;">R$ ${totalExp.toFixed(2)}</p>
+            </div>
+          </div>
+
+          <div style="background: #eef2ff; border-left: 4px solid #6366f1; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
+            <h3 style="font-size: 12px; margin: 0 0 5px 0; color: #312e81;">✨ Diagnóstico & Insights da IA</h3>
+            <p style="font-size: 10px; color: #334155; line-height: 1.4; margin: 0; white-space: pre-line;">${lastInsight}</p>
+          </div>
+
+          <h3 style="font-size: 12px; margin: 0 0 6px 0; color: #1e293b;">Gastos por Categoria</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+            <tbody>${catRows || '<tr><td style="font-size: 10px;">Sem saídas</td></tr>'}</tbody>
+          </table>
+
+          <h3 style="font-size: 12px; margin: 0 0 6px 0; color: #1e293b;">Extrato do Período</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8fafc; text-align: left;">
+                <th style="padding: 5px 8px; font-size: 10px; color: #64748b;">Data</th>
+                <th style="padding: 5px 8px; font-size: 10px; color: #64748b;">Descrição</th>
+                <th style="padding: 5px 8px; font-size: 10px; color: #64748b;">Categoria</th>
+                <th style="padding: 5px 8px; font-size: 10px; color: #64748b; text-align: right;">Valor</th>
+              </tr>
+            </thead>
+            <tbody>${txRows}</tbody>
+          </table>
+        </div>
+      `;
+
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Relatorio_Caixa_${getTodayKey()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      try {
+        await html2pdf().set(opt).from(container.children[0]).save();
+        hideStatus();
+      } catch (err) {
+        showStatus('Erro ao compilar PDF.', true);
+      }
+    }
+
+    function showStatus(text, isError = false) {
+      const el = document.getElementById('statusAlert');
+      const textEl = document.getElementById('statusText');
+      el.className = `w-full max-w-md p-3 mb-4 rounded-xl text-xs flex items-center justify-between border ${isError ? 'bg-rose-950/80 border-rose-800 text-rose-300' : 'bg-slate-900 border-indigo-500/50 text-indigo-200'}`;
+      textEl.innerHTML = isError ? `⚠️ ${text}` : `<span class="animate-spin inline-block w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full mr-2"></span> ${text}`;
+      el.classList.remove('hidden');
+      if (isError) setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
+    function toggleConfigModal() {
+      const modal = document.getElementById('configModal');
+      document.getElementById('apiKeyInput').value = currentApiKey;
+      modal.classList.toggle('hidden');
+      modal.classList.toggle('flex');
+    }
+    function toggleInsightsModal() {
+      const modal = document.getElementById('insightsModal');
+      modal.classList.toggle('hidden');
+      modal.classList.toggle('flex');
+    }
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) return alert('Chave inválida!');
+      currentApiKey = key;
+      localStorage.setItem(API_KEY_STORAGE, key);
+      toggleConfigModal();
+    }
+    function clearHistory() {
+      if (confirm('Zerar todos os registros salvos?')) {
+        transactions = [];
+        saveAndRender();
+      }
+    }
+    function deleteTransaction(id) {
+      transactions = transactions.filter(t => t.id !== id);
+      saveAndRender();
+    }
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    const d = new Date();
+    document.getElementById('customMonthInput').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}`;
+    setFilter('month');
+  </script>
+</body>
+</html>
