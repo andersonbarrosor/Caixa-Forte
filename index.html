@@ -68,10 +68,11 @@
       <span id="voiceLabel" class="text-xs font-semibold">Gravar Áudio</span>
     </button>
     
+    <!-- Upload Flexível: Foto, Galeria ou PDF -->
     <label class="flex flex-col items-center justify-center p-4 bg-purple-600 active:bg-purple-700 rounded-2xl shadow-lg font-medium cursor-pointer transition active:scale-95 text-center text-white">
-      <span class="text-2xl mb-1">📸</span>
-      <span class="text-xs font-semibold">Foto do Recibo</span>
-      <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden">
+      <span class="text-2xl mb-1">📄</span>
+      <span class="text-xs font-semibold">Foto / Galeria / PDF</span>
+      <input type="file" accept="image/*,application/pdf" id="fileInput" class="hidden">
     </label>
   </section>
 
@@ -90,9 +91,22 @@
     </span>
   </div>
 
-  <!-- Painel de Categorias Unificadas -->
+  <!-- Painel de Categorias com Gráfico de Donut + Barras -->
   <section class="w-full max-w-md bg-slate-900/60 border border-slate-800 p-4 rounded-2xl mb-4">
     <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Distribuição por Categoria</h2>
+    
+    <!-- Gráfico Donut (Pizza Vazada em SVG) -->
+    <div id="donutContainer" class="flex flex-col items-center justify-center py-2 border-b border-slate-800/60 mb-3">
+      <div class="relative w-36 h-36 flex items-center justify-center">
+        <svg id="donutSvg" class="w-full h-full transform -rotate-90" viewBox="0 0 100 100"></svg>
+        <div class="absolute flex flex-col items-center justify-center text-center">
+          <span class="text-[9px] text-slate-400 uppercase font-medium">Total Saídas</span>
+          <span id="donutCenterTotal" class="text-xs font-bold text-white mt-0.5">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Barras de Categorias -->
     <div id="categoryBreakdown" class="space-y-2.5">
       <p class="text-[11px] text-slate-600 text-center py-2">Sem saídas neste período.</p>
     </div>
@@ -135,39 +149,38 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'priv_finance_txs_v3';
+    const STORAGE_KEY = 'priv_finance_txs_v4';
     const API_KEY_STORAGE = 'priv_gemini_key';
 
-    // Recupera dados com migração automática
-    let rawOld = localStorage.getItem('priv_finance_txs_v2') || localStorage.getItem('priv_finance_txs');
+    // Migração de versões anteriores
+    let rawOld = localStorage.getItem('priv_finance_txs_v3') || localStorage.getItem('priv_finance_txs_v2') || localStorage.getItem('priv_finance_txs');
     let loadedTxs = JSON.parse(localStorage.getItem(STORAGE_KEY) || rawOld || '[]');
     
-    // Padroniza datas antigas para evitar inconsistência de filtro
     let transactions = loadedTxs.map(t => {
       const dateStr = t.dateKey || (t.isoDate ? t.isoDate.slice(0, 10) : new Date(t.id || Date.now()).toISOString().slice(0, 10));
       return {
         ...t,
-        dateKey: dateStr, // YYYY-MM-DD
+        dateKey: dateStr,
         displayDate: t.displayDate || dateStr.split('-').reverse().join('/')
       };
     });
 
     let currentApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
-    let activeFilter = 'month'; // 'month', 'week', 'all', 'custom_month'
+    let activeFilter = 'month';
     let selectedCustomMonth = '';
 
-    // Paleta de Categorias Fixas
-    const CATEGORY_COLORS = {
-      'Contas & Moradia': 'bg-indigo-500',
-      'Alimentação': 'bg-amber-500',
-      'Transporte': 'bg-blue-500',
-      'Saúde & Beleza': 'bg-emerald-500',
-      'Lazer & Assinaturas': 'bg-pink-500',
-      'Compras & Pessoal': 'bg-purple-500',
-      'Educação': 'bg-cyan-500',
-      'Ganhos / Renda': 'bg-emerald-400',
-      'Investimentos': 'bg-teal-400',
-      'Outros': 'bg-slate-500'
+    // Paleta de Cores (Hex para SVG e Classes Tailwind)
+    const CATEGORY_META = {
+      'Contas & Moradia': { color: '#6366f1', tailwind: 'bg-indigo-500' },
+      'Alimentação': { color: '#f59e0b', tailwind: 'bg-amber-500' },
+      'Transporte': { color: '#3b82f6', tailwind: 'bg-blue-500' },
+      'Saúde & Beleza': { color: '#10b981', tailwind: 'bg-emerald-500' },
+      'Lazer & Assinaturas': { color: '#ec4899', tailwind: 'bg-pink-500' },
+      'Compras & Pessoal': { color: '#a855f7', tailwind: 'bg-purple-500' },
+      'Educação': { color: '#06b6d4', tailwind: 'bg-cyan-500' },
+      'Ganhos / Renda': { color: '#34d399', tailwind: 'bg-emerald-400' },
+      'Investimentos': { color: '#2dd4bf', tailwind: 'bg-teal-400' },
+      'Outros': { color: '#64748b', tailwind: 'bg-slate-500' }
     };
 
     function getTodayKey() {
@@ -196,7 +209,7 @@
 
     function onCustomMonthChange(val) {
       if (!val) return;
-      selectedCustomMonth = val; // formato 'YYYY-MM'
+      selectedCustomMonth = val;
       activeFilter = 'custom_month';
       
       document.getElementById('btnFilterMonth').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
@@ -210,7 +223,7 @@
 
     function getFilteredTransactions() {
       const todayStr = getTodayKey();
-      const currentMonthPrefix = todayStr.slice(0, 7); // 'YYYY-MM'
+      const currentMonthPrefix = todayStr.slice(0, 7);
 
       return transactions.filter(t => {
         const tDate = t.dateKey || todayStr;
@@ -224,7 +237,7 @@
         if (activeFilter === 'custom_month' && selectedCustomMonth) {
           return tDate.startsWith(selectedCustomMonth);
         }
-        return true; // 'all'
+        return true;
       });
     }
 
@@ -249,7 +262,7 @@
         list.innerHTML = filtered.slice().reverse().map(t => `
           <div class="flex justify-between items-center p-3 bg-slate-900/60 rounded-2xl border border-slate-800/80">
             <div class="flex items-center gap-2.5">
-              <span class="w-2.5 h-2.5 rounded-full ${CATEGORY_COLORS[t.category] || 'bg-slate-500'}"></span>
+              <span class="w-2.5 h-2.5 rounded-full ${CATEGORY_META[t.category]?.tailwind || 'bg-slate-500'}"></span>
               <div>
                 <p class="font-medium text-xs text-slate-200">${t.description}</p>
                 <span class="text-[10px] text-slate-500">${t.category} • ${t.displayDate}</span>
@@ -266,11 +279,17 @@
       }
     }
 
+    // Desenha Gráfico Donut (SVG) e Lista de Barras
     function renderCategoryBreakdown(filteredList, totalExpense) {
       const breakdownEl = document.getElementById('categoryBreakdown');
+      const donutSvg = document.getElementById('donutSvg');
+      const donutTotalEl = document.getElementById('donutCenterTotal');
       const expenses = filteredList.filter(t => t.type === 'expense');
 
+      donutTotalEl.innerText = `R$ ${totalExpense.toFixed(2)}`;
+
       if (expenses.length === 0 || totalExpense === 0) {
+        donutSvg.innerHTML = `<circle cx="50" cy="50" r="38" fill="none" stroke="#1e293b" stroke-width="12" />`;
         breakdownEl.innerHTML = '<p class="text-[11px] text-slate-600 text-center py-2">Sem saídas neste período.</p>';
         return;
       }
@@ -282,9 +301,32 @@
 
       const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
 
+      // Renderiza os arcos do Donut (Perímetro do círculo r=38 é ~238.76)
+      const circumference = 2 * Math.PI * 38;
+      let accumulatedOffset = 0;
+      let svgHtml = '';
+
+      sortedCats.forEach(([cat, amount]) => {
+        const ratio = amount / totalExpense;
+        const dashLength = ratio * circumference;
+        const color = CATEGORY_META[cat]?.color || '#64748b';
+
+        svgHtml += `
+          <circle cx="50" cy="50" r="38" fill="none" 
+            stroke="${color}" 
+            stroke-width="12" 
+            stroke-dasharray="${dashLength} ${circumference}" 
+            stroke-dashoffset="-${accumulatedOffset}" />
+        `;
+        accumulatedOffset += dashLength;
+      });
+
+      donutSvg.innerHTML = svgHtml;
+
+      // Renderiza as Barras
       breakdownEl.innerHTML = sortedCats.map(([cat, amount]) => {
         const pct = ((amount / totalExpense) * 100).toFixed(0);
-        const colorClass = CATEGORY_COLORS[cat] || 'bg-slate-500';
+        const colorClass = CATEGORY_META[cat]?.tailwind || 'bg-slate-500';
         return `
           <div>
             <div class="flex justify-between text-[11px] font-medium text-slate-300 mb-1">
@@ -299,7 +341,7 @@
       }).join('');
     }
 
-    // --- PROMPT COM REGRAS ESTRITAS DE CATEGORIZAÇÃO ---
+    // --- PROMPT ESTRUTURADO GEMINI FLASH ---
     async function callGeminiExtract(payloadPart) {
       if (!currentApiKey) {
         toggleConfigModal();
@@ -308,10 +350,10 @@
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
 
-      const systemPrompt = `Você é um extrator contábil. Extraia as informações financeiras da entrada e retorne APENAS um objeto JSON com:
+      const systemPrompt = `Você é um extrator contábil. Extraia as informações financeiras do documento/áudio/imagem e retorne APENAS um objeto JSON com:
 - description: breve resumo do gasto ou ganho
 - amount: número positivo (float)
-- type: "income" para receitas/ganhos ou "expense" para gastos/saídas
+- type: "income" para receitas/ganhos ou "expense" para gastos/saídas/comprovantes
 - category: escolha EXATAMENTE uma das seguintes opções baseado nas regras:
   * "Contas & Moradia": energia elétrica, água, internet, gás, aluguel, condomínio, IPTU.
   * "Alimentação": supermercado, restaurante, lanches, delivery, padaria, feira.
@@ -350,18 +392,21 @@ Se não conseguir identificar valor, retorne amount como 0.`;
       return JSON.parse(result.candidates[0].content.parts[0].text);
     }
 
-    // --- ENTRADA POR FOTO ---
-    document.getElementById('cameraInput').addEventListener('change', async (e) => {
+    // --- UPLOAD DE ARQUIVO (CÂMERA, GALERIA OU PDF) ---
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       try {
-        showStatus('Lendo comprovante com IA...');
-        const base64Data = await fileToBase64(file);
+        const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+        showStatus(isPdf ? 'Lendo documento PDF com IA...' : 'Analisando imagem com IA...');
         
+        const base64Data = await fileToBase64(file);
+        const mimeType = isPdf ? 'application/pdf' : (file.type || 'image/jpeg');
+
         const extracted = await callGeminiExtract({
           inline_data: {
-            mime_type: file.type || "image/jpeg",
+            mime_type: mimeType,
             data: base64Data.split(',')[1]
           }
         });
@@ -371,7 +416,7 @@ Se não conseguir identificar valor, retorne amount como 0.`;
           const todayKey = getTodayKey();
           transactions.push({
             id: Date.now(),
-            description: extracted.description || 'Comprovante',
+            description: extracted.description || (isPdf ? 'Documento PDF' : 'Recibo'),
             amount: parseFloat(extracted.amount),
             type: extracted.type || 'expense',
             category: extracted.category || 'Outros',
@@ -381,7 +426,7 @@ Se não conseguir identificar valor, retorne amount como 0.`;
           saveAndRender();
           hideStatus();
         } else {
-          showStatus('Não foi possível identificar o valor na foto.', true);
+          showStatus('Não foi possível identificar o valor no documento.', true);
         }
       } catch (err) {
         showStatus(err.message, true);
