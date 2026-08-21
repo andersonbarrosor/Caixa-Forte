@@ -26,7 +26,7 @@
     </div>
   </header>
 
-  <!-- Barra de Filtros de Período -->
+  <!-- Filtros de Período -->
   <section class="w-full max-w-md my-3">
     <div class="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-xs text-center font-medium">
       <button id="btnFilterMonth" onclick="setFilter('month')" class="py-2 rounded-xl transition bg-indigo-600 text-white font-semibold">Mês Atual</button>
@@ -34,10 +34,13 @@
       <button id="btnFilterAll" onclick="setFilter('all')" class="py-2 rounded-xl transition text-slate-400 hover:text-white">Tudo</button>
     </div>
     
-    <!-- Seletor de mês específico (quando aplicável) -->
-    <div id="monthPickerContainer" class="mt-2 flex items-center justify-between px-1">
-      <span id="periodLabel" class="text-[11px] text-slate-400 font-medium">Exibindo dados do mês corrente</span>
-      <input type="month" id="customMonthInput" onchange="onCustomMonthChange(this.value)" class="bg-slate-900 border border-slate-800 rounded-lg text-[11px] px-2 py-1 text-slate-200 outline-none">
+    <!-- Seletor de Mês Específico -->
+    <div class="mt-2.5 flex items-center justify-between px-2 bg-slate-900/40 py-1.5 rounded-xl border border-slate-800/60">
+      <span id="periodLabel" class="text-[11px] text-slate-400 font-medium">Mês Atual</span>
+      <div class="flex items-center gap-1">
+        <span class="text-[10px] text-slate-500">Mudar mês:</span>
+        <input type="month" id="customMonthInput" onchange="onCustomMonthChange(this.value)" class="bg-slate-800 border border-slate-700 rounded-lg text-[11px] px-2 py-0.5 text-slate-200 outline-none">
+      </div>
     </div>
   </section>
 
@@ -58,8 +61,8 @@
     </div>
   </section>
 
-  <!-- Botões de Ação Rápida com IA -->
-  <section class="w-full max-w-md grid grid-cols-2 gap-3 mb-4">
+  <!-- Botões de Ação com IA -->
+  <section class="w-full max-w-md grid grid-cols-2 gap-3 mb-3">
     <button id="voiceBtn" class="flex flex-col items-center justify-center p-4 bg-indigo-600 active:bg-indigo-700 rounded-2xl shadow-lg font-medium transition active:scale-95 text-white">
       <span id="voiceIcon" class="text-2xl mb-1">🎤</span>
       <span id="voiceLabel" class="text-xs font-semibold">Gravar Áudio</span>
@@ -74,7 +77,7 @@
 
   <!-- Botão de Consultoria e Insights de IA -->
   <section class="w-full max-w-md mb-4">
-    <button onclick="requestFinancialInsights()" class="w-full flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl text-xs font-semibold text-indigo-300 active:scale-95 transition">
+    <button onclick="requestFinancialInsights()" class="w-full flex items-center justify-center gap-2 p-3 bg-slate-800/90 hover:bg-slate-700 border border-slate-700 rounded-2xl text-xs font-semibold text-indigo-300 active:scale-95 transition">
       <span>✨</span> Analisar Meus Gastos com IA
     </button>
   </section>
@@ -87,7 +90,7 @@
     </span>
   </div>
 
-  <!-- Painel de Categorias (Raio-X de Gastos) -->
+  <!-- Painel de Categorias Unificadas -->
   <section class="w-full max-w-md bg-slate-900/60 border border-slate-800 p-4 rounded-2xl mb-4">
     <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Distribuição por Categoria</h2>
     <div id="categoryBreakdown" class="space-y-2.5">
@@ -95,7 +98,7 @@
     </div>
   </section>
 
-  <!-- Lista de Lançamentos do Período -->
+  <!-- Lista de Lançamentos -->
   <section class="w-full max-w-md flex-1">
     <div class="flex justify-between items-center mb-2 px-1">
       <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lançamentos do Período</h2>
@@ -113,9 +116,7 @@
         </h3>
         <button onclick="toggleInsightsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
       </div>
-      <div id="insightsContent" class="overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-1 flex-1">
-        <!-- Injetado via JS -->
-      </div>
+      <div id="insightsContent" class="overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-1 flex-1"></div>
       <button onclick="toggleInsightsModal()" class="mt-4 w-full bg-slate-800 py-2.5 rounded-xl text-xs font-semibold text-slate-200">Fechar</button>
     </div>
   </div>
@@ -125,9 +126,7 @@
     <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl w-full max-w-sm">
       <h3 class="text-base font-bold mb-2">Chave da API Gemini</h3>
       <p class="text-xs text-slate-400 mb-4">Sua chave é armazenada exclusivamente na memória do Safari do seu iPhone.</p>
-      
-      <input type="password" id="apiKeyInput" placeholder="Chave da API..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white mb-4 outline-none focus:border-indigo-500">
-      
+      <input type="password" id="apiKeyInput" placeholder="AQ..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white mb-4 outline-none focus:border-indigo-500">
       <div class="flex gap-2">
         <button onclick="saveApiKey()" class="flex-1 bg-indigo-600 py-2.5 rounded-xl font-semibold text-xs text-white">Salvar</button>
         <button onclick="toggleConfigModal()" class="flex-1 bg-slate-800 py-2.5 rounded-xl text-xs text-slate-300">Fechar</button>
@@ -136,62 +135,68 @@
   </div>
 
   <script>
-    // --- ESTADO GLOBAL & STORAGE ---
-    const STORAGE_KEY = 'priv_finance_txs_v2';
+    const STORAGE_KEY = 'priv_finance_txs_v3';
     const API_KEY_STORAGE = 'priv_gemini_key';
+
+    // Recupera dados com migração automática
+    let rawOld = localStorage.getItem('priv_finance_txs_v2') || localStorage.getItem('priv_finance_txs');
+    let loadedTxs = JSON.parse(localStorage.getItem(STORAGE_KEY) || rawOld || '[]');
     
-    // Migração de dados legados caso existam
-    let rawOld = localStorage.getItem('priv_finance_txs');
-    let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY) || rawOld || '[]');
+    // Padroniza datas antigas para evitar inconsistência de filtro
+    let transactions = loadedTxs.map(t => {
+      const dateStr = t.dateKey || (t.isoDate ? t.isoDate.slice(0, 10) : new Date(t.id || Date.now()).toISOString().slice(0, 10));
+      return {
+        ...t,
+        dateKey: dateStr, // YYYY-MM-DD
+        displayDate: t.displayDate || dateStr.split('-').reverse().join('/')
+      };
+    });
+
     let currentApiKey = localStorage.getItem(API_KEY_STORAGE) || '';
-
     let activeFilter = 'month'; // 'month', 'week', 'all', 'custom_month'
-    let selectedCustomMonth = ''; // 'YYYY-MM'
+    let selectedCustomMonth = '';
 
-    // Paleta de cores para categorias
+    // Paleta de Categorias Fixas
     const CATEGORY_COLORS = {
+      'Contas & Moradia': 'bg-indigo-500',
       'Alimentação': 'bg-amber-500',
       'Transporte': 'bg-blue-500',
-      'Moradia': 'bg-indigo-500',
-      'Saúde': 'bg-emerald-500',
-      'Lazer': 'bg-pink-500',
-      'Compras': 'bg-purple-500',
+      'Saúde & Beleza': 'bg-emerald-500',
+      'Lazer & Assinaturas': 'bg-pink-500',
+      'Compras & Pessoal': 'bg-purple-500',
       'Educação': 'bg-cyan-500',
-      'Serviços': 'bg-orange-500',
-      'Salário': 'bg-emerald-400',
-      'Investimento': 'bg-teal-400',
-      'Geral': 'bg-slate-500'
+      'Ganhos / Renda': 'bg-emerald-400',
+      'Investimentos': 'bg-teal-400',
+      'Outros': 'bg-slate-500'
     };
 
-    // --- SISTEMA DE FILTROS ---
+    function getTodayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
     function setFilter(type) {
       activeFilter = type;
-      
-      const buttons = {
-        'month': document.getElementById('btnFilterMonth'),
-        'week': document.getElementById('btnFilterWeek'),
-        'all': document.getElementById('btnFilterAll')
-      };
-
-      Object.keys(buttons).forEach(k => {
-        if (k === type) {
-          buttons[k].className = 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold';
-        } else {
-          buttons[k].className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
-        }
-      });
+      document.getElementById('btnFilterMonth').className = type === 'month' ? 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold' : 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterWeek').className = type === 'week' ? 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold' : 'py-2 rounded-xl transition text-slate-400 hover:text-white';
+      document.getElementById('btnFilterAll').className = type === 'all' ? 'py-2 rounded-xl transition bg-indigo-600 text-white font-semibold' : 'py-2 rounded-xl transition text-slate-400 hover:text-white';
 
       const label = document.getElementById('periodLabel');
-      if (type === 'month') label.innerText = 'Exibindo: Mês Atual';
-      if (type === 'week') label.innerText = 'Exibindo: Últimos 7 Dias';
-      if (type === 'all') label.innerText = 'Exibindo: Todo o Histórico';
+      if (type === 'month') {
+        const d = new Date();
+        label.innerText = `Mês Atual (${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()})`;
+      } else if (type === 'week') {
+        label.innerText = 'Últimos 7 Dias';
+      } else if (type === 'all') {
+        label.innerText = 'Todo o Histórico';
+      }
 
       saveAndRender();
     }
 
     function onCustomMonthChange(val) {
       if (!val) return;
-      selectedCustomMonth = val;
+      selectedCustomMonth = val; // formato 'YYYY-MM'
       activeFilter = 'custom_month';
       
       document.getElementById('btnFilterMonth').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
@@ -199,39 +204,32 @@
       document.getElementById('btnFilterAll').className = 'py-2 rounded-xl transition text-slate-400 hover:text-white';
 
       const [year, month] = val.split('-');
-      document.getElementById('periodLabel').innerText = `Exibindo: ${month}/${year}`;
+      document.getElementById('periodLabel').innerText = `Mês: ${month}/${year}`;
       saveAndRender();
     }
 
     function getFilteredTransactions() {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1; // 1-12
+      const todayStr = getTodayKey();
+      const currentMonthPrefix = todayStr.slice(0, 7); // 'YYYY-MM'
 
       return transactions.filter(t => {
-        if (!t.isoDate) return true; // fallback
-        const tDate = new Date(t.isoDate);
-
+        const tDate = t.dateKey || todayStr;
         if (activeFilter === 'month') {
-          return tDate.getFullYear() === currentYear && (tDate.getMonth() + 1) === currentMonth;
+          return tDate.startsWith(currentMonthPrefix);
         }
         if (activeFilter === 'week') {
-          const diffTime = Math.abs(now - tDate);
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          return diffDays <= 7;
+          const diffDays = (new Date(todayStr) - new Date(tDate)) / (1000 * 60 * 60 * 24);
+          return diffDays >= 0 && diffDays <= 7;
         }
         if (activeFilter === 'custom_month' && selectedCustomMonth) {
-          const [sYear, sMonth] = selectedCustomMonth.split('-').map(Number);
-          return tDate.getFullYear() === sYear && (tDate.getMonth() + 1) === sMonth;
+          return tDate.startsWith(selectedCustomMonth);
         }
         return true; // 'all'
       });
     }
 
-    // --- RENDERIZAÇÃO DE UI & GRÁFICOS ---
     function saveAndRender() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-      
       const filtered = getFilteredTransactions();
 
       const totalInc = filtered.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
@@ -242,10 +240,8 @@
       document.getElementById('income').innerText = `R$ ${totalInc.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('expenses').innerText = `R$ ${totalExp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      // Render Categorias
       renderCategoryBreakdown(filtered, totalExp);
 
-      // Render Lista de Lançamentos
       const list = document.getElementById('txList');
       if (filtered.length === 0) {
         list.innerHTML = '<p class="text-xs text-slate-600 text-center py-6">Nenhum lançamento no período selecionado.</p>';
@@ -256,7 +252,7 @@
               <span class="w-2.5 h-2.5 rounded-full ${CATEGORY_COLORS[t.category] || 'bg-slate-500'}"></span>
               <div>
                 <p class="font-medium text-xs text-slate-200">${t.description}</p>
-                <span class="text-[10px] text-slate-500">${t.category} • ${t.displayDate || t.date}</span>
+                <span class="text-[10px] text-slate-500">${t.category} • ${t.displayDate}</span>
               </div>
             </div>
             <div class="flex items-center gap-3">
@@ -303,78 +299,7 @@
       }).join('');
     }
 
-    // --- CONSULTORIA E INSIGHTS COM IA ---
-    async function requestFinancialInsights() {
-      const filtered = getFilteredTransactions();
-      if (filtered.length === 0) {
-        return alert('Não há gastos registrados no período selecionado para analisar.');
-      }
-
-      if (!currentApiKey) {
-        toggleConfigModal();
-        return;
-      }
-
-      showStatus('Gerando análise do consultor de IA...');
-
-      try {
-        const payloadSummary = filtered.map(t => `${t.type === 'income' ? 'RECEITA' : 'DESPESA'} | ${t.category} | ${t.description} | R$ ${t.amount.toFixed(2)}`).join('\n');
-
-        const prompt = `Você é um planejador financeiro pessoal altamente prático.
-Analise os seguintes lançamentos financeiros do período selecionado pelo usuário:
-
-${payloadSummary}
-
-Gere uma resposta em texto formatado com tópicos concisos cobrindo:
-1. 💡 **Resumo do Comportamento:** Onde o usuário mais gastou e o que chama atenção.
-2. ⚠️ **Pontos de Atenção:** Gastos supérfluos ou excessivos identificados.
-3. 🎯 **Plano Prático:** 2 ou 3 metas ou ações diretas para economizar e melhorar o saldo no próximo período.
-Seja direto, empático e focado em economia real.`;
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
-        });
-
-        if (!response.ok) throw new Error('Erro ao comunicar com a IA.');
-        
-        const result = await response.json();
-        const text = result.candidates[0].content.parts[0].text;
-        
-        document.getElementById('insightsContent').innerHTML = text
-          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-          .replace(/\n/g, '<br>');
-        
-        hideStatus();
-        toggleInsightsModal();
-      } catch (err) {
-        showStatus(err.message, true);
-      }
-    }
-
-    // --- EXPORTAÇÃO DE BACKUP CSV ---
-    function exportToCSV() {
-      if (transactions.length === 0) return alert('Nenhum dado para exportar.');
-
-      let csvContent = "data:text/csv;charset=utf-8,ID,Data,Tipo,Categoria,Descricao,Valor\n";
-      transactions.forEach(t => {
-        csvContent += `"${t.id}","${t.displayDate || t.date}","${t.type}","${t.category}","${t.description.replace(/"/g, '""')}","${t.amount}"\n`;
-      });
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `meu_caixa_backup_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // --- INTEGRAÇÃO GEMINI PARA ENTRADA DE DADOS ---
+    // --- PROMPT COM REGRAS ESTRITAS DE CATEGORIZAÇÃO ---
     async function callGeminiExtract(payloadPart) {
       if (!currentApiKey) {
         toggleConfigModal();
@@ -384,11 +309,21 @@ Seja direto, empático e focado em economia real.`;
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
 
       const systemPrompt = `Você é um extrator contábil. Extraia as informações financeiras da entrada e retorne APENAS um objeto JSON com:
-- description (string concisa)
-- amount (float positivo, sem símbolos monetários)
-- type ("income" para receitas/ganhos ou "expense" para compras/gastos/saídas)
-- category (escolha exatamente uma: Alimentação, Transporte, Moradia, Saúde, Lazer, Compras, Educação, Serviços, Salário, Investimento, Geral)
-Se não for possível identificar um valor, retorne amount como 0.`;
+- description: breve resumo do gasto ou ganho
+- amount: número positivo (float)
+- type: "income" para receitas/ganhos ou "expense" para gastos/saídas
+- category: escolha EXATAMENTE uma das seguintes opções baseado nas regras:
+  * "Contas & Moradia": energia elétrica, água, internet, gás, aluguel, condomínio, IPTU.
+  * "Alimentação": supermercado, restaurante, lanches, delivery, padaria, feira.
+  * "Transporte": combustível, uber, táxi, passagem, pedágio, manutenção de carro.
+  * "Saúde & Beleza": farmácia, remédios, consultas, dentista, academia, corte de cabelo.
+  * "Lazer & Assinaturas": netflix, spotify, cinema, passeios, bares, viagens.
+  * "Compras & Pessoal": roupas, sapatos, eletrônicos, presentes, itens pessoais.
+  * "Educação": cursos, livros, mensalidade escolar/faculdade.
+  * "Ganhos / Renda": salário, freelance, pix recebido, vendas, reembolsos.
+  * "Investimentos": aportes, poupança, tesouro, ações.
+  * "Outros": qualquer outro gasto que não pertença a nenhuma acima.
+Se não conseguir identificar valor, retorne amount como 0.`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -415,7 +350,7 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       return JSON.parse(result.candidates[0].content.parts[0].text);
     }
 
-    // --- CAPTURA DE FOTO ---
+    // --- ENTRADA POR FOTO ---
     document.getElementById('cameraInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -433,13 +368,14 @@ Se não for possível identificar um valor, retorne amount como 0.`;
 
         if (extracted && extracted.amount > 0) {
           const now = new Date();
+          const todayKey = getTodayKey();
           transactions.push({
             id: Date.now(),
             description: extracted.description || 'Comprovante',
             amount: parseFloat(extracted.amount),
             type: extracted.type || 'expense',
-            category: extracted.category || 'Geral',
-            isoDate: now.toISOString(),
+            category: extracted.category || 'Outros',
+            dateKey: todayKey,
             displayDate: now.toLocaleDateString('pt-BR')
           });
           saveAndRender();
@@ -454,7 +390,7 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       }
     });
 
-    // --- CAPTURA DE ÁUDIO ---
+    // --- ENTRADA POR VOZ ---
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
@@ -467,7 +403,6 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       if (!isRecording) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          
           let mimeType = 'audio/mp4';
           if (!MediaRecorder.isTypeSupported('audio/mp4')) {
             mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
@@ -485,7 +420,7 @@ Se não for possível identificar um valor, retorne amount como 0.`;
             stream.getTracks().forEach(track => track.stop());
 
             try {
-              showStatus('Transcrevendo e categorizando áudio...');
+              showStatus('Transcrevendo e categorizando...');
               const base64Audio = await blobToBase64(audioBlob);
               
               const extracted = await callGeminiExtract({
@@ -497,13 +432,14 @@ Se não for possível identificar um valor, retorne amount como 0.`;
 
               if (extracted && extracted.amount > 0) {
                 const now = new Date();
+                const todayKey = getTodayKey();
                 transactions.push({
                   id: Date.now(),
                   description: extracted.description || 'Lançamento por voz',
                   amount: parseFloat(extracted.amount),
                   type: extracted.type || 'expense',
-                  category: extracted.category || 'Geral',
-                  isoDate: now.toISOString(),
+                  category: extracted.category || 'Outros',
+                  dateKey: todayKey,
                   displayDate: now.toLocaleDateString('pt-BR')
                 });
                 saveAndRender();
@@ -533,7 +469,62 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       }
     });
 
-    // --- CONTROLE DE MODAIS E UTILITÁRIOS ---
+    // --- INSIGHTS DE IA ---
+    async function requestFinancialInsights() {
+      const filtered = getFilteredTransactions();
+      if (filtered.length === 0) return alert('Nenhum dado no período selecionado.');
+      if (!currentApiKey) return toggleConfigModal();
+
+      showStatus('Gerando análise com IA...');
+      try {
+        const payloadSummary = filtered.map(t => `${t.type === 'income' ? 'RECEITA' : 'DESPESA'} | ${t.category} | ${t.description} | R$ ${t.amount.toFixed(2)}`).join('\n');
+
+        const prompt = `Você é um planejador financeiro direto e prático.
+Analise os gastos do período selecionado:
+${payloadSummary}
+
+Gere um diagnóstico com tópicos claros:
+1. 💡 **Onde mais gastou:** Principais categorias e valores.
+2. ⚠️ **Pontos de Atenção:** Gastos supérfluos ou excessivos.
+3. 🎯 **Metas Práticas:** 2 conselhos diretos para economizar no próximo período.`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${currentApiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        if (!response.ok) throw new Error('Erro ao comunicar com a IA.');
+        const result = await response.json();
+        const text = result.candidates[0].content.parts[0].text;
+        
+        document.getElementById('insightsContent').innerHTML = text
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+          .replace(/\n/g, '<br>');
+        
+        hideStatus();
+        toggleInsightsModal();
+      } catch (err) {
+        showStatus(err.message, true);
+      }
+    }
+
+    // --- BACKUP CSV ---
+    function exportToCSV() {
+      if (transactions.length === 0) return alert('Nenhum dado para exportar.');
+      let csvContent = "data:text/csv;charset=utf-8,ID,Data,Tipo,Categoria,Descricao,Valor\n";
+      transactions.forEach(t => {
+        csvContent += `"${t.id}","${t.displayDate}","${t.type}","${t.category}","${t.description.replace(/"/g, '""')}","${t.amount}"\n`;
+      });
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csvContent));
+      link.setAttribute("download", `caixa_backup_${getTodayKey()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
     function showStatus(text, isError = false) {
       const el = document.getElementById('statusAlert');
       const textEl = document.getElementById('statusText');
@@ -543,43 +534,35 @@ Se não for possível identificar um valor, retorne amount como 0.`;
       if (isError) setTimeout(() => el.classList.add('hidden'), 5000);
     }
 
-    function hideStatus() {
-      document.getElementById('statusAlert').classList.add('hidden');
-    }
-
+    function hideStatus() { document.getElementById('statusAlert').classList.add('hidden'); }
     function toggleConfigModal() {
       const modal = document.getElementById('configModal');
       document.getElementById('apiKeyInput').value = currentApiKey;
       modal.classList.toggle('hidden');
       modal.classList.toggle('flex');
     }
-
     function toggleInsightsModal() {
       const modal = document.getElementById('insightsModal');
       modal.classList.toggle('hidden');
       modal.classList.toggle('flex');
     }
-
     function saveApiKey() {
       const key = document.getElementById('apiKeyInput').value.trim();
-      if (!key) return alert('Insira uma chave válida!');
+      if (!key) return alert('Chave inválida!');
       currentApiKey = key;
       localStorage.setItem(API_KEY_STORAGE, key);
       toggleConfigModal();
     }
-
     function clearHistory() {
-      if (confirm('Atenção: Isso irá apagar todos os registros do seu aparelho. Deseja continuar?')) {
+      if (confirm('Zerar todos os registros salvos?')) {
         transactions = [];
         saveAndRender();
       }
     }
-
     function deleteTransaction(id) {
       transactions = transactions.filter(t => t.id !== id);
       saveAndRender();
     }
-
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -588,7 +571,6 @@ Se não for possível identificar um valor, retorne amount como 0.`;
         reader.readAsDataURL(file);
       });
     }
-
     function blobToBase64(blob) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -599,9 +581,9 @@ Se não for possível identificar um valor, retorne amount como 0.`;
     }
 
     // Inicialização
-    const today = new Date();
-    document.getElementById('customMonthInput').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2, '0')}`;
-    saveAndRender();
+    const d = new Date();
+    document.getElementById('customMonthInput').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}`;
+    setFilter('month');
   </script>
 </body>
 </html>
