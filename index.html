@@ -45,10 +45,19 @@
     </div>
   </section>
 
-  <!-- Card de Saldo & Totais -->
+  <!-- Card de Saldo, Totais & Gasto do Dia -->
   <section class="w-full max-w-md bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-xl mb-4 backdrop-blur">
-    <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Saldo do Período</span>
-    <div id="balance" class="text-3xl font-extrabold text-white mt-1">R$ 0,00</div>
+    <div class="flex justify-between items-start">
+      <div>
+        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Saldo do Período</span>
+        <div id="balance" class="text-3xl font-extrabold text-white mt-0.5">R$ 0,00</div>
+      </div>
+      <!-- Destaque: Gasto de Hoje -->
+      <div class="bg-slate-950/80 border border-slate-800 px-3 py-2 rounded-2xl text-right">
+        <span class="text-[9px] text-amber-400 font-semibold uppercase tracking-wider block">Gasto Hoje</span>
+        <span id="todayExpenses" class="text-sm font-bold text-slate-200">R$ 0,00</span>
+      </div>
+    </div>
     
     <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
       <div>
@@ -56,7 +65,7 @@
         <p id="income" class="text-base font-semibold text-slate-200">R$ 0,00</p>
       </div>
       <div>
-        <span class="text-[11px] text-rose-400 font-medium uppercase">Saídas</span>
+        <span class="text-[11px] text-rose-400 font-medium uppercase">Saídas (Período)</span>
         <p id="expenses" class="text-base font-semibold text-slate-200">R$ 0,00</p>
       </div>
     </div>
@@ -256,9 +265,18 @@
       const totalExp = filtered.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
       const bal = totalInc - totalExp;
 
+      // Cálculo específico do total gasto no dia atual
+      const todayKey = getTodayKey();
+      const todayTotalExp = transactions
+        .filter(t => t.type === 'expense' && t.dateKey === todayKey)
+        .reduce((acc, t) => acc + t.amount, 0);
+
       document.getElementById('balance').innerText = `R$ ${bal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('income').innerText = `R$ ${totalInc.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('expenses').innerText = `R$ ${totalExp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      
+      // Atualiza o display do gasto de hoje
+      document.getElementById('todayExpenses').innerText = `R$ ${todayTotalExp.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
       renderCategoryBreakdown(filtered, totalExp);
 
@@ -380,7 +398,7 @@ Se não conseguir identificar valor, retorne amount como 0.`;
         if (response.status === 429 || rawMsg.includes('Quota exceeded') || rawMsg.includes('quota')) {
           const retryMatch = rawMsg.match(/retry in ([\d\.]+)s/i);
           const seconds = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : 25;
-          throw new Error(`Limite temporário de requisições. Aguarde ${seconds} segundos para tentar de novo.`);
+          throw new Error(`Limite temporário de requisições. Aguarde cerca de ${seconds} segundos para tentar de novo.`);
         } else if (response.status === 400 || rawMsg.includes('API_KEY_INVALID') || rawMsg.includes('key not valid')) {
           throw new Error('Chave de API inválida. Verifique em ⚙️ Chave.');
         }
